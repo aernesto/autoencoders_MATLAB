@@ -1,0 +1,16 @@
+*.mat
+*.gz
+Grad_descent.pdf
+*.aux
+batches/*
+*.fig
+Proj2.radillo.v1.pdf
+Proj2.radillo.v1.log
+Proj2.radillo.v1.out
+*.bbl
+*.blg
+*.bib
+*.png
+Proj2.radillo.v2.pdf
+Proj2.radillo.v2.log
+Proj2.radillo.v2.out
