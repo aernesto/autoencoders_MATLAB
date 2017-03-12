@@ -1,0 +1,68 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb}
+\newcommand{\lp}{\left(}
+\newcommand{\rp}{\right)}
+\begin{document}
+\begin{itemize}
+\item Matrix of weights between input and hidden layer:
+\[
+W=\left(w_{ij}^{(1)}\right)_{ij}, \quad 1\leq i\leq n_2; \quad1\leq j \leq n_1+1,
+\]
+where $w_{in_1+1}^{(1)}$ is always the threshold of unit $i$.
+\item Matrix of weights between hidden and output layer:
+\[
+W=\left(w_{ij}^{(2)}\right)_{ij}, \quad 1\leq i\leq n_3; \quad1\leq j \leq n_2+1,
+\]
+where $w_{in_2+1}^{(1)}$ is always the threshold of unit $i$.
+\item The total number of cases in the training set or in the batch is denoted by $M$.
+\item The state of input unit $i$ under presentation of case $m$ is denoted $x_i$. 
+\item The state of hidden unit $j$ under presentation of case $m$ is denoted $h_j(W,m)$.
+\item The state of unit $k$ on the output layer under presentation of case $m$ is denoted $o_k(W,m)$.
+Hence, the output units states are: $o_1(W,m),\ldots,o_{n_3}(W,m)$.
+\item Linear output of hidden unit $i$:
+\[
+A_i^{(1)}(W,m)=\sum_{j=1}^{n_1+1}x_jw_{ij}^{(1)}
+\]
+\item Logistic function is denoted $\sigma$. We have:
+\[
+\sigma(v)=\frac{1}{1+e^{-v}}\qquad \sigma'(v)=\frac{e^{-v}}{\lp1+e^{-v}\rp^2}
+\]
+\item Output of unit $j$ in hidden layer, under presentation of case $m$:
+\[
+h_j(W,m)=\sigma\lp A_j^{(1)}(W,m) \rp
+\]
+\item Linear output of the output layer unit $i$:
+\[
+A_i^{(2)}(W,m)=\sum_{j=1}^{n_2+1}h_j(W,m)w_{ij}^{(2)}
+\]
+\item Output of unit $i$ in output layer, under presentation of case $m$:
+\[
+o_i(W,m)=\sigma\lp A_i^{(2)}(W,m) \rp
+\]
+\item Denote by $\delta_{x,y}$ the Kronecker delta which is 1 only when $x=y$ and zero otherwise.
+\item Also, define $\iota$ to be the function that maps each case $m$ to the output unit index $\iota(m)$
+which codes for the correct label of this case. Hence, if case 36 represents a 4, then unit $o_5$ will code
+for it in $\text{OUT}_{36}$ and therefore $\iota(36)=5$.
+\item We denote the MSE function by the letter $f$:
+\begin{align}
+f(W)&=\frac{1}{M}\sum_{m=1}^{M}\left |\left| \widehat{\text{OUT}}_m-\text{OUT}_m \right |\right |_2^2\\
+	&=\frac{1}{M}\sum_{m=1}^M \sum_{k=1}^{n_3}\lp o_{k}(W,m)-\delta_{k,\iota(m)}\rp^2
+\end{align}
+\item The update rule for the weights is:
+\[
+\Delta W_n=-\text{grad} \lp f(W)\rp\cdot \frac{\gamma}{\epsilon_n}
+\]
+\end{itemize}
+The formula for the partial derivative of the MSE with respect to a weight from the H-OUT layer, $w^{(2)}_{ij}$, is:
+\[
+\frac{\partial f}{\partial w^{(2)}_{ij}}(W)=\frac{2}{M}\sum_{m=1}^M\sigma'\left(A_i^{(2)}(W,m)\right)h_j(W,m)\left[o_i(W,m)-\delta_{\iota(m),i}\right] 
+\]
+And when it is with respect to a weight from the IN-to-H layer, $w^{(1)}_{ij}$, we get:
+\[
+\frac{\partial f}{\partial w^{(1)}_{ij}}(W)=\frac{2}{M}
+\sum_{m=1}^M\left[\sigma'\left(A_i^{(1)}(W,m)\right)x_j
+\sum_{k=1}^{n_3}\sigma'\left(A_k^{(2)}(W,m)\right) w^{(2)}_{ki}\left[o_k(W,m)-\delta_{\iota(m),k}\right] \right]
+\]
+
+
+\end{document}

@@ -1,0 +1,297 @@
+\documentclass{article}
+%\usepackage[utf8]{inputenc}
+\usepackage{amssymb,amsmath, hyperref}
+\usepackage{fancyhdr}
+\usepackage[title]{appendix}
+\usepackage{enumitem}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Math - 6373}
+\lhead{Project 2}
+\chead{Autoencoders}
+\rfoot{Page \thepage}
+\lfoot{A. Radillo}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\title{Autoencoders training for handwritten digits classification {\color{blue}(version 2)} \\ {\large Project 2 - Math-6373 - Prof. Azencott}}
+\author{Adrian Radillo - PSID: 1328335}
+\newcommand{\bi}{\begin{itemize}}
+\newcommand{\ei}{\end{itemize}}
+\makeatletter
+\g@addto@macro\@floatboxreset\centering
+\makeatother
+
+\usepackage{tabularx,ragged2e,booktabs,caption}
+\newcolumntype{C}[1]{>{\Centering}m{#1}}
+\renewcommand\tabularxcolumn[1]{C{#1}}
+
+
+\usepackage{listings}
+\usepackage{color} %red, green, blue, yellow, cyan, magenta, black, white
+\definecolor{mygreen}{RGB}{28,172,0} % color values Red, Green, Blue
+\definecolor{mylilas}{RGB}{170,55,241}
+\newcommand{\lp}{\left(}
+\newcommand{\rp}{\right)}
+%\usepackage{mdframed}
+\begin{document}
+
+
+\lstset{language=Matlab,%
+    %basicstyle=\color{red},
+    breaklines=true,%
+    morekeywords={matlab2tikz},
+    keywordstyle=\color{blue},%
+    morekeywords=[2]{1}, keywordstyle=[2]{\color{black}},
+    identifierstyle=\color{black},%
+    stringstyle=\color{mylilas},
+    commentstyle=\color{mygreen},%
+    showstringspaces=false,%without this there will be a symbol in the places where there is a space
+    numbers=left,%
+    numberstyle={\tiny \color{black}},% size of the numbers
+    numbersep=9pt, % this defines how far the numbers are from the text
+    emph=[1]{for,end,break},emphstyle=[1]\color{red}, %some words to emphasise
+    %emph=[2]{word1,word2}, emphstyle=[2]{style},    
+}
+
+\maketitle
+{\color{blue}
+{\bf Remark:} Everything that is in blue has been added in version 2.
+}
+
+% -----------------------------------------------------------------------------------------
+% DATABASE
+% -----------------------------------------------------------------------------------------
+\section{Database}
+I use the task and data as in project 1. This is a set of
+60,000 14x14 grayscale images of handwritten digits for the training set and
+10,000 images for the test set, all taken from the MNIST database and pre-processed by myself
+in project 1.
+% -----------------------------------------------------------------------------------------
+% Autoencoder ARCHITECTURE
+% -----------------------------------------------------------------------------------------
+\section{Autoencoder architecture}
+\begin{itemize}
+\item The input and output layers have $14\times14=196$ units. The range of each one of these units  
+is $[0,1]$ as the initial pixel intensities ranging from 0 to 255 were rescaled by 1/255.
+\item My tentative values for $h$ are $50,100,150$ for the $h<n_1$ case, and $h=250,300,350$ for the $h>n_1$ case.
+\end{itemize}
+% -----------------------------------------------------------------------------------------
+% FIRST EXPERIMENT
+% -----------------------------------------------------------------------------------------
+\section{First experiment}
+\begin{itemize}
+\item My {\color{blue}Software Tool (}ST{\color{blue})} is MATLAB, and more specifically, the Neural Network Toolbox from the R2015b version. I created custom neural networks for the three small {\color{blue}($h<n_1$)} autoencoders with the function create\_NN() presented in appendix~\ref{app:create}.
+\item {\color{blue}Below} are short and non-exhaustive descriptions of the options available in this toolbox:
+\begin{description}
+\item[learning] A neural network object has a property called trainFcn. This object property can be set to many 
+different values, which correspond to a variety of learning algorithms {\color{blue}(see figure~\ref{fig:trainFcn})}. The backpropagation gradient descent
+algorithm corresponds to the name `traingd'. However, in order to update the weights after the presentation of a whole batch I believe that the name `trainb' is more appropriate. But I really struggled to find clear documentation on this
+point. Below is a list of all the other options offered by the ST:
+\begin{figure}[bth!]
+\centering
+\fbox{\includegraphics[width=\textwidth]{trainFcn.png}}
+\caption{Existing built-in training functions in my ST. Taken from~\cite{Demuth2006}}\label{fig:trainFcn}
+\end{figure}
+\item[initialization] I used the `rands' initFcn property value for both the weights and the biases. This samples 
+independent values from the uniform distribution over the interval $[-1,1]$ for each weight and bias. {\color{blue}See figure~\ref{fig:initFcn} for a list of the other available options.}
+\begin{figure}[bth!]
+\centering
+\fbox{\includegraphics[width=\textwidth]{initFcn.png}}
+\caption{Existing built-in initializing functions in my ST. Taken from~\cite{Demuth2006}. This picture only concerns the inputWeights property but `rands' exists as well for the layerWeights and biases properties.}\label{fig:initFcn}
+\end{figure}
+\item[batch learning] The ideal batch learning option that would have suited my needs in the MATLAB Neural Network Toolbox is the `trainingOptions' function called for a convolutional neural network object with the stochastic gradient descent with momentum (`sgdm') solver in the R2016b release of MATLAB. However, my version of MATLAB didn't have this option,
+so I set out to produce my training batches myself (as in project 1).
+
+I produced 3,000 batches containing 500 cases each {\color{blue}(this is the batch size)}, taken from the 60,000 cases in the training set. Consecutive
+batches were constructed with an overlap of 100 cases, and the whole training set was used 20 times in order to 
+produce the batches. Each sweep through the training set was preceded by a shuffling of its elements order.
+I refer you to the make\_batches.m function in the appendix of my project 1 to see the source code of this function. 
+In appendix~\ref{app:train_diabolo} I show how the train() function from my ST was called sequentially for each batch
+in order to train my autoencoder.
+\item[step size] The step size is controlled by the `lr' property of trainFcn property. The ST offered a learning algorithm
+based on gradient descent with adapting learning rate (`traingda'), but I was not sure that this corresponded to 
+the equations seen in class. The `traingd' learning function, that I used, uses a fixed learning rate.
+Since I called the train() function sequentially on each batch, I only set the number of Epochs in the training properties to 1, for each iteration. Then, in between iterations, I wasn't sure whether I should change the learning rate manually, or
+if the training algorithm would do it for me. This is why there are a lot of commented lines in appendix~\ref{app:train_diabolo}. {\color{blue}In any case, in my code, I used the default value of 0.01 for the learning rate property `lr'.}
+\item[{\color{blue}stop training}] {\color{blue} When training the `diabolo' autoencoders, my criterion to stop the training was simply to stop after the 20$^\text{th}$sweep through the training set, or in other words, after the presentation of the last batch, \# 3,000. For the sparse autoencoders with $h>n_1$, I used the `trainscg' function, for which the training was stopped as soon as one of the following criterion was met\footnote{\href{https://www.mathworks.com/help/nnet/ref/trainscg.html?searchHighlight=trainscg&s_tid=doc_srchtitle}{{\color{blue}MATLAB manual reference}}}:
+\renewcommand{\labelitemii}{$\bullet$}%options for bullet symbol
+\begin{itemize}
+\item The maximum number of epochs (sweeps) is reached (I set it to 20).
+\item The maximum amount of time is exceeded (I left it at its default value, which is $\infty$)
+\item Performance is minimized to the goal (I set it to $MSE=0$).
+\item The performance gradient falls below min\_grad (I left it at its default value, which is $\|\text{grad}(MSE(W)) \|=10^{-6}$).
+\item Validation performance has increased more than max\_fail times since the last time it decreased (irrelevant for me as I didn't use validation).
+\end{itemize}}
+\end{description}
+\end{itemize}
+% -----------------------------------------------------------------------------------------
+% Training `small' autoencoders
+% -----------------------------------------------------------------------------------------
+\section*{Training {\color{blue}`diabolo'} autoencoders}
+{ \color{blue}
+\subsection*{Training autoencoders and plotting RMSEn}
+As mentioned above, 
+appendix~\ref{app:create} contains the code used to create custom autoencoders with respective hidden layer sizes: 50, 100, 150 (recall that $n_1=196$). Each one of these neural network was subsequently trained according to the source code contained in appendix~\ref{app:train_diabolo}.
+
+Figure~\ref{fig:mse_diabolo} shows the resulting RMSE as a function of the batch number for the three distinct hidden layer sizes. 
+The three curves are very similar I am therefore quite doubtful about the correctness of my algorithm in appendix~\ref{app:train_diabolo}.
+
+\subsection*{RMSE$^*$ of trained autoencoders}
+The RMSE for the trained autoencoders was computed by taking the square root of the output of the script presented in appendix~\ref{app:msemat}. The results are presented in figure~\ref{fig:rmse_global}, together with the results from the sparse autoencoders ($h>n_1$). Once again, values of the RMSE$^*$ above 0.5 indicate that my training was inefficient for the `diabolo' autoencoders. Such inefficient training might have come from an erroneous algorithm, or from a too small number of sweeps during training, or from a too low learning rate. Also, I obtained very similar RMSE values for the three hidden layer sizes. This probably indicates that my training algorithm was erroneous.
+}
+\begin{figure}[bth!]
+\centering
+\fbox{\includegraphics[width=0.65\textwidth]{mse_diabolo.png}}
+\caption{{\color{blue}Evolution of the RMSE through training, for the three distinct hidden layer sizes. The abscissa has the same unit for all plots.}}\label{fig:mse_diabolo}
+\end{figure}
+
+\subsection*{{\color{blue}Explicit mathematical expression to compute $\text{grad}(MSE(W))$}}
+Below is a list of mathematical notation that I used to derive the retro-propagation rule by hand.
+The final result is expressed in equations~\eqref{one} and~\eqref{two}.
+\begin{itemize}
+\item Matrix of weights between input and hidden layer:
+\[
+W=\left(w_{ij}^{(1)}\right)_{ij}, \quad 1\leq i\leq n_2; \quad1\leq j \leq n_1+1,
+\]
+where $w_{in_1+1}^{(1)}$ is always the threshold of unit $i$.
+\item Matrix of weights between hidden and output layer:
+\[
+W=\left(w_{ij}^{(2)}\right)_{ij}, \quad 1\leq i\leq n_3; \quad1\leq j \leq n_2+1,
+\]
+where $w_{in_2+1}^{(1)}$ is always the threshold of unit $i$.
+\item The total number of cases in the training set or in the batch is denoted by $M$.
+\item The state of input unit $i$ under presentation of case $m$ is denoted $x_i$. 
+\item The state of hidden unit $j$ under presentation of case $m$ is denoted $h_j(W,m)$.
+\item The state of unit $k$ on the output layer under presentation of case $m$ is denoted $o_k(W,m)$.
+Hence, the output units states are: $o_1(W,m),\ldots,o_{n_3}(W,m)$.
+\item Linear output of hidden unit $i$:
+\[
+A_i^{(1)}(W,m)=\sum_{j=1}^{n_1+1}x_jw_{ij}^{(1)}
+\]
+\item Logistic function is denoted $\sigma$. We have:
+\[
+\sigma(v)=\frac{1}{1+e^{-v}}\qquad \sigma'(v)=\frac{e^{-v}}{\lp1+e^{-v}\rp^2}
+\]
+\item Output of unit $j$ in hidden layer, under presentation of case $m$:
+\[
+h_j(W,m)=\sigma\lp A_j^{(1)}(W,m) \rp
+\]
+\item Linear output of the output layer unit $i$:
+\[
+A_i^{(2)}(W,m)=\sum_{j=1}^{n_2+1}h_j(W,m)w_{ij}^{(2)}
+\]
+\item Output of unit $i$ in output layer, under presentation of case $m$:
+\[
+o_i(W,m)=\sigma\lp A_i^{(2)}(W,m) \rp
+\]
+\item Denote by $\delta_{x,y}$ the Kronecker delta which is 1 only when $x=y$ and zero otherwise.
+\item Also, define $\iota$ to be the function that maps each case $m$ to the output unit index $\iota(m)$
+which codes for the correct label of this case. Hence, if case 36 represents a 4, then unit $o_5$ will code
+for it in $\text{OUT}_{36}$ and therefore $\iota(36)=5$.
+\item We denote the MSE function by the letter $f$:
+\begin{align}
+f(W)&=\frac{1}{M}\sum_{m=1}^{M}\left |\left| \widehat{\text{OUT}}_m-\text{OUT}_m \right |\right |_2^2\\
+	&=\frac{1}{M}\sum_{m=1}^M \sum_{k=1}^{n_3}\lp o_{k}(W,m)-\delta_{k,\iota(m)}\rp^2
+\end{align}
+\item The update rule for the weights is:
+\[
+\Delta W_n=-\text{grad} \lp f(W)\rp\cdot \frac{\gamma}{\epsilon_n}
+\]
+\end{itemize}
+The formula for the partial derivative of the MSE with respect to a weight from the H-OUT layer, $w^{(2)}_{ij}$, is:
+\begin{equation}
+\frac{\partial f}{\partial w^{(2)}_{ij}}(W)=\frac{2}{M}\sum_{m=1}^M\sigma'\left(A_i^{(2)}(W,m)\right)h_j(W,m)\left[o_i(W,m)-\delta_{\iota(m),i}\right] \label{one}
+\end{equation}
+And when it is with respect to a weight from the IN-to-H layer, $w^{(1)}_{ij}$, we get:
+\begin{equation}
+\frac{\partial f}{\partial w^{(1)}_{ij}}(W)=\frac{2}{M}
+\sum_{m=1}^M\left[\sigma'\left(A_i^{(1)}(W,m)\right)x_j
+\sum_{k=1}^{n_3}\sigma'\left(A_k^{(2)}(W,m)\right) w^{(2)}_{ki}\left[o_k(W,m)-\delta_{\iota(m),k}\right] \right]\label{two}
+\end{equation}
+% -----------------------------------------------------------------------------------------
+% SECOND EXPERIMENT: `large' autoencoders with sparsity
+% -----------------------------------------------------------------------------------------
+\section{Second experiment: `large' autoencoders with sparsity}
+I trained the `large autoencoders' with the code presented in appendix~\ref{app:sparse}
+\subsection{Results}
+The following table {\color{blue}in figure~\ref{fig:rmse_global}} was generated with the script presented in appendix~\ref{app:msemat} after training the 9 autoencoders. {\color{blue}We observe that the RMSE of the trained sparse autoencoders is generally smaller than half the magnitude of the RMSE for the `diabolo' autoencoders. 
+
+For the sparsity target $\rho=5$\% we observe no difference in RMSE across hidden layer size (h=250, 300, 350). This might be due to the relatively small number of sweeps used in training (20). 
+For the sparsity target $\rho=15$\%, the RMSE of the trained autoencoders decreases slightly as the hidden layer size increases.}
+\begin{figure}[bth!]
+\centering
+{\color{blue}
+\begin{tabular}{|l | c  cc|ccc|ccc|}
+\hline
+$h$& $50$&$100$&$150$&
+$250$&$300$&$350$&
+$250$&$300$&$350$\\ 
+$\rho$& &&&
+$ 0.05$&$0.05$&$ 0.05$&
+$ 0.15$&$0.15$&$0.15$\\ 
+\hline
+training & 0.59   & 0.58  &  0.58  &  0.27    &0.27  &  0.27&    0.27 &   0.26   &0.25\\
+                                    
+test &  0.59&0.58&0.58&0.27&0.27&0.27&0.27&0.26&0.25\\
+\hline
+\end{tabular}}
+\caption{{\color{blue}RMSE (bottom two rows) for the nine \emph{trained} autoencoders (one per column), computed over both the training and the test set. The first two rows of the table designate the hidden size $h$ and the sparsity target $\rho$ of each autoencoder.}}\label{fig:rmse_global}
+\end{figure}
+\section{Detailed analysis of hidden layer structure and efficiency}
+I did not have time to do this part of the homework.
+{\color{blue}The activations of the hidden layer of each trained autoencoder was computed and projected onto the first three Principal Components, using the scripts presented in appendix~\ref{app:pca}. The 3D scatter plots of these projections are presented in figure~\ref{fig:pca}.}
+\begin{figure}[bth!]
+\centering
+\fbox{\includegraphics[width=\textwidth]{pca.png}}
+\caption{{\color{blue}Projection of the activations of the hidden layers of each of the 9 autoencoders, onto the first three principal components. Hidden layer size is h and k represents the smallest number of PCA dimensions required to explain 90\% of the variance of the hidden layer activations. Top row of plots is for the cases $h<n_1$. Middle row is for the cases $h>n_1$ AND $\rho=5$\%. Bottom row is for $\rho=15$\%.}}\label{fig:pca}
+\end{figure}
+{\color{blue}
+For each network, let $k$ be the smallest number of eigenvalues that, jointly, explain more than 90\% of the variance in the activations of the hidden layer.
+
+I do not know why $k$ could  not be computed for the two sparse autoencoders having hidden layer sizes $h=250$ and $300$, and sparsity target $\rho=5$\%.
+
+I observe that the value of $k$ varies greatly between the `diabolo' and the sparse autoencoders. 
+
+I do not observe any clustering of the points in the PCA projection space. I hypothesize that none of my networks was sufficiently trained.}
+{\color{blue}
+\section{Autoencoding efficiency}
+I did not have time to address this question.}
+\bibliographystyle{plain}
+\bibliography{auto}
+\begin{appendices}
+% -----------------------------------------------------------------------------------------
+% MATLAB code
+% -----------------------------------------------------------------------------------------
+\section{MATLAB code}
+\subsection{Custom network with NN Toolbox in MATLAB}
+\label{app:create}
+\lstinputlisting{create_NN.m}
+\subsection{Training the `diabolo'-autoencoders}
+{\color{blue}When training the networks with hidden layer sizes 100 and 150, the string `net\_50' below was replaced by
+`net\_100' and `net\_150' respectively. Also, the commented lines were never used in my final results, they are merely vestiges of my trials and errors.}
+\label{app:train_diabolo}
+\lstinputlisting{train_autoencoder.m}
+\subsection{Training autoencoders with sparsity constraint}
+\label{app:sparse}
+\lstinputlisting{train_sparse.m}
+\begin{center}
+\line(1,0){250}
+\end{center}
+\lstinputlisting{train_sparse_UH.m}
+\subsection{Generating matrix of MSE on training and test sets for all autoencoders}
+\label{app:msemat}
+\lstinputlisting{mse_perf_small.m}
+\subsection{PCA on hidden layers}
+\label{app:pca}
+\lstinputlisting{pca_hidden.m}
+\begin{center}
+\line(1,0){250}
+\end{center}
+\lstinputlisting{create_IH.m}
+\begin{center}
+\line(1,0){250}
+\end{center}
+{\color{blue}The following is the script used to produce figure~\ref{fig:pca}.}
+\lstinputlisting{pca_global.m}
+\end{appendices}
+\end{document}
